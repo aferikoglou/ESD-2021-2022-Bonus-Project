@@ -3,7 +3,7 @@
 * Latency : 2.431 ns
 * Kernel freq : 300 MHz
 
-** Resource utilization for a single FPGA kernel **
+**Resource utilization for a single FPGA kernel**
 
 Resource      | Used          | Total         | % Utilization
 ------------- | ------------- | ------------- | -------------
