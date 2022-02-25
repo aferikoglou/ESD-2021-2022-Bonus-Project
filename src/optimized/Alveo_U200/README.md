@@ -1,6 +1,6 @@
 # Kalman Filter @Alveo U200
 
-**Non-Optimized Version
+**Non-Optimized Version**
 * Latency : 42.76 ms
 * Kernel freq : 300 MHz
 
@@ -14,7 +14,7 @@ LUT           | 11966         | 394080        | 3
 FF            | 4183          | 788160        | ~0
 
 
-**Optimized Version
+**Optimized Version**
 
 * Latency : 1.500 ms
 * Kernel freq : 300 MHz
