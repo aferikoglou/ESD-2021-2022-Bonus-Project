@@ -58,9 +58,9 @@ pip3 install pymoo numpy psutil
 ---
 ## Optimizing Code
 
-In this section we will discuss how to optimize the code using the two tools. Out of the box we support 
+In this section we will discuss how to optimize the code using the two tools.
 
-***Note 1***: Each folder named **DSE_EXPLORER_X** contains the synthesis results from source file iterationX.cpp<br>
+***Note 1***: Each folder named **DSE_EXPLORER_X** contains the synthesis results from source file iterationX.cpp . Same with **DSE_GENETIC_X**. <br>
 ***Note 2***: The following commands are to be run inside the "tool" folder. In case the user wants to run them in another directory, the paths will have to be modified accordingly.
 
 ### Random Optimizer
@@ -98,9 +98,18 @@ python3 geneticDSE.py <path_to_kernel_file> <path_to_tcl_script>
 
 Example:
 ```bash
-python3 geneticDSE.py ../kalman_filter_kernel.cpp tcl_scripts/sample_script_alve_u200.tcl
+python3 geneticDSE.py ../kalman_filter_kernel.cpp tcl_scripts/sample_script_alveo_u200.tcl
 ``` 
 
 ***Note: Any other execution parameter can only be changed inside the source code***
 
 ---
+
+
+
+
+
+
+
+
+
