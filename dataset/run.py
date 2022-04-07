@@ -174,7 +174,7 @@ class Experiment:
 		self.__writeExperimentResults()
 
 PATH_TO_RODINIA_HLS_DIR = './rodinia_hls'
-BENCHS = ['backprop', 'backprop_forward', 'cfd_flux', 'cfd_step_factor', 'hotspot', 'kmeans', 'knn', 'lc_dilate', 'lc_mgvf', 'pathfinder', 'srad', 'streamcluster']
+BENCHS = ['backprop', 'backprop_forward', 'cfd_step_factor', 'hotspot', 'kmeans', 'knn', 'lc_dilate', 'lc_mgvf', 'pathfinder', 'srad', 'streamcluster']
 DEVICE = 'xczu9eg-ffvb1156-2-e'
 PERIOD = '3.33'
 
