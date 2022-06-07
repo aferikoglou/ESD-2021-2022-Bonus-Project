@@ -13,25 +13,8 @@ ostream& operator<<(ostream& stream, const CXString& str)
   return stream;
 }
 
-// enables analysis only after discovering top level function
-void matchTopLevel(int &analysis_flag,CXCursor cc, const char * top_level_func)
-{
-  if(clang_getCursorKind(cc) == CXCursor_FunctionDecl && analysis_flag == 0)
-  {
-    const char *fn = clang_getCString(clang_Cursor_getMangling(cc));
-    if (strstr(fn,top_level_func) != NULL)
-    {
-      analysis_flag = 1;
-      //cout << fn << endl;
-    }
-    clang_disposeString(clang_Cursor_getMangling(cc));
-  }
-}
-
-
 void print_decl_loc(CXCursor cc)
 {
-    // this line filters out non-array types
     if (clang_getNumElements(clang_getCursorType(cc)) > 0)
     {
         unsigned line,col;
@@ -52,18 +35,16 @@ void print_for_loc(CXCursor cc)
     clang_getExpansionLocation(src,NULL,&line,&col,NULL);
     cout << "L," <<line - 1<< "," << col - 1 << ","  << action_point_counter++ <<  endl;
 }
-
 int analyze = 0;
-
 
 int main(int argc,char **argv)
 {
   CXIndex index = clang_createIndex(0, 0);
   CXTranslationUnit unit = clang_parseTranslationUnit(
     index,
-    argv[1], nullptr, 0,
+    argv[1],argv+2,argc-2,
     nullptr, 0,
-    CXTranslationUnit_SingleFileParse); //none
+    CXTranslationUnit_None | CXTranslationUnit_KeepGoing); //none
   if (unit == nullptr)
   {
     cerr << "Unable to parse translation unit. Quitting." << endl;
@@ -75,15 +56,22 @@ int main(int argc,char **argv)
     cursor,
     [](CXCursor c, CXCursor parent, CXClientData client_data)
     {      
-
+      if (clang_Location_isFromMainFile(clang_getCursorLocation(c)))
+      {
         if (clang_getCursorKind(c) == CXCursor_VarDecl)
           print_decl_loc(c);
         else if(clang_getCursorKind(c) == CXCursor_ForStmt)
           print_for_loc(c);
 
-      // This begins the analysis of the code when we reach the top-level function and then only.
-      //matchTopLevel(analyze,c,"initiate_scan");
 
+       /* unsigned line,col;
+        CXSourceLocation src = clang_getCursorLocation(c);
+        clang_getExpansionLocation(src,NULL,&line,&col,NULL);
+        cout << line << " Cursor '" << clang_getCursorSpelling(c) << "' of kind '"
+        << clang_getCursorKindSpelling(clang_getCursorKind(c)) << "'\n";*/
+        
+        return CXChildVisit_Recurse;
+      }
       return CXChildVisit_Recurse;
     },
     nullptr);
