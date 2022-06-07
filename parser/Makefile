@@ -1,0 +1,6 @@
+CXX = g++
+
+CXXFLAGS = -I/opt/xilinx/xrt/include -w -I/tools/Xilinx/Vivado/2021.1/include -Wall -O0 -g -std=c++11 -fmessage-length=0 -L/opt/xilinx/xrt/lib -I/opt/Xilinx/Vitis_HLS/2020.2/include -lOpenCL -pthread  -lrt -lstdc++
+
+autogen_exit: hls_extractor_temp_file.cpp
+	$(CXX) -o autogen_exit hls_extractor_temp_file.cpp $(CXXFLAGS)
