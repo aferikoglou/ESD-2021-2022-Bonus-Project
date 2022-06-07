@@ -3,6 +3,8 @@
 #define LARGE_BUS 512
 #include "mc.h"
 
+void initiate_scan(){}
+
 extern "C" {
 inline void compute_velocity(float& density, float3& momentum, float3& velocity)
 {
@@ -28,13 +30,12 @@ inline float compute_speed_of_sound(float& density, float& pressure)
 
 void cfd_step_factor(float result[TILE_ROWS], float variables[TILE_ROWS * NVAR], float areas[TILE_ROWS])
 {
-    for (int i = 0; i < TILE_ROWS / PARA_FACTOR; i++) {
-#pragma HLS pipeline II=1
+L1:    for (int i = 0; i < TILE_ROWS / PARA_FACTOR; i++) {
 
 
-        float density[PARA_FACTOR];
-        float3 momentum[PARA_FACTOR];
-        float density_energy[PARA_FACTOR];
+L2:        float density[PARA_FACTOR];
+L3:        float3 momentum[PARA_FACTOR];
+L4:        float density_energy[PARA_FACTOR];
 
         int iii = i * PARA_FACTOR;
 
@@ -148,8 +149,7 @@ void cfd_step_factor(float result[TILE_ROWS], float variables[TILE_ROWS * NVAR],
         density_energy[15] = variables[NVAR*iii + VAR_DENSITY_ENERGY   + 75 ];
 
 
-        for (int ii = 0; ii < PARA_FACTOR; ii++) {
-#pragma HLS unroll
+L5:        for (int ii = 0; ii < PARA_FACTOR; ii++) {
             int iii = i * PARA_FACTOR + ii;
             float3 velocity;       compute_velocity(density[ii], momentum[ii], velocity);
             float speed_sqd = compute_speed_sqd(velocity);
@@ -203,35 +203,23 @@ void workload(class ap_uint<LARGE_BUS> * result,  class ap_uint<LARGE_BUS> * var
     
     #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-    float result_inner_0      [TILE_ROWS];
-#pragma HLS array_partition variable=result_inner_0       cyclic factor=16
-    float variables_inner_0   [TILE_ROWS * NVAR];
-#pragma HLS array_partition variable=variables_inner_0    cyclic factor=80
-    float areas_inner_0       [TILE_ROWS];
-#pragma HLS array_partition variable=areas_inner_0        cyclic factor=16
+L6:    float result_inner_0      [TILE_ROWS];
+L7:    float variables_inner_0   [TILE_ROWS * NVAR];
+L8:    float areas_inner_0       [TILE_ROWS];
 
-    float result_inner_1      [TILE_ROWS];
-#pragma HLS array_partition variable=result_inner_1       cyclic factor=16
-    float variables_inner_1   [TILE_ROWS * NVAR];
-#pragma HLS array_partition variable=variables_inner_1    cyclic factor=80
-    float areas_inner_1       [TILE_ROWS];
-#pragma HLS array_partition variable=areas_inner_1        cyclic factor=16
+L9:    float result_inner_1      [TILE_ROWS];
+L10:    float variables_inner_1   [TILE_ROWS * NVAR];
+L11:    float areas_inner_1       [TILE_ROWS];
 
-    float result_inner_2      [TILE_ROWS];
-#pragma HLS array_partition variable=result_inner_2       cyclic factor=16
-    float variables_inner_2   [TILE_ROWS * NVAR];
-#pragma HLS array_partition variable=variables_inner_2    cyclic factor=80
-    float areas_inner_2       [TILE_ROWS];
-#pragma HLS array_partition variable=areas_inner_2        cyclic factor=16
+L12:    float result_inner_2      [TILE_ROWS];
+L13:    float variables_inner_2   [TILE_ROWS * NVAR];
+L14:    float areas_inner_2       [TILE_ROWS];
 
-    float result_inner_3      [TILE_ROWS];
-#pragma HLS array_partition variable=result_inner_3       cyclic factor=16
-    float variables_inner_3   [TILE_ROWS * NVAR];
-#pragma HLS array_partition variable=variables_inner_3    cyclic factor=80
-    float areas_inner_3       [TILE_ROWS];
-#pragma HLS array_partition variable=areas_inner_3        cyclic factor=16
+L15:    float result_inner_3      [TILE_ROWS];
+L16:    float variables_inner_3   [TILE_ROWS * NVAR];
+L17:    float areas_inner_3       [TILE_ROWS];
 
-    for (int k = 0; k < SIZE / TILE_ROWS + 3; k++) {
+L18:    for (int k = 0; k < SIZE / TILE_ROWS + 3; k++) {
 
         int load_variables_flag = k >= 0 && k < (SIZE / TILE_ROWS);
         int load_areas_flag = k >= 1 && k < (SIZE / TILE_ROWS) + 1;

@@ -2,6 +2,8 @@
 
 extern "C" {
 
+void initiate_scan(){}
+
 float heaviside(float x) {
     // A simpler, faster approximation of the Heaviside function
     float out = 0.0;
@@ -12,8 +14,8 @@ float heaviside(float x) {
 
 void lc_mgvf(float result[TILE_ROWS * GRID_COLS], float imgvf[(TILE_ROWS + 2) * GRID_COLS], float I[TILE_ROWS * GRID_COLS], int which_boundary)
 {
-    for (int i = 0; i < TILE_ROWS; i++) {
-        for (int j = 0; j < GRID_COLS; j++) {
+L1:    for (int i = 0; i < TILE_ROWS; i++) {
+L2:        for (int j = 0; j < GRID_COLS; j++) {
             float old_val = imgvf[i * GRID_COLS + j + GRID_COLS];
 
             float UL    = ((i == 0 && which_boundary == TOP              ||  j == 0              ) ? 0 : (imgvf[(i - 1   ) * GRID_COLS + (j - 1  ) + GRID_COLS] - old_val));
@@ -49,15 +51,15 @@ void workload(float result[GRID_ROWS * GRID_COLS], float imgvf[GRID_ROWS * GRID_
     
     #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-	float result_inner [TILE_ROWS * GRID_COLS];
-	float imgvf_inner [(TILE_ROWS + 2) * GRID_COLS];
-	float I_inner [TILE_ROWS * GRID_COLS];
+L3:	float result_inner [TILE_ROWS * GRID_COLS];
+L4:	float imgvf_inner [(TILE_ROWS + 2) * GRID_COLS];
+L5:	float I_inner [TILE_ROWS * GRID_COLS];
 
 	int i;
 	float diff = 1.0;
-	for (i = 0; i < ITERATION / 2; i++) {
+L6:	for (i = 0; i < ITERATION / 2; i++) {
     	int k;
-    	for(k = 0; k < GRID_ROWS / TILE_ROWS; k++) {
+L7:    	for(k = 0; k < GRID_ROWS / TILE_ROWS; k++) {
 
     		memcpy(imgvf_inner, imgvf + k * TILE_ROWS * GRID_COLS - GRID_COLS, sizeof(float) * (TILE_ROWS + 2) * GRID_COLS);
     		memcpy(I_inner, I + k * TILE_ROWS * GRID_COLS, sizeof(float) * TILE_ROWS * GRID_COLS);
@@ -68,7 +70,7 @@ void workload(float result[GRID_ROWS * GRID_COLS], float imgvf[GRID_ROWS * GRID_
 
     	}
 
-    	for(k = 0; k < GRID_ROWS / TILE_ROWS; k++) {
+L8:    	for(k = 0; k < GRID_ROWS / TILE_ROWS; k++) {
 
     		memcpy(imgvf_inner, result + k * TILE_ROWS * GRID_COLS - GRID_COLS, sizeof(float) * (TILE_ROWS + 2) * GRID_COLS);
     		memcpy(I_inner, I + k * TILE_ROWS * GRID_COLS, sizeof(float) * TILE_ROWS * GRID_COLS);

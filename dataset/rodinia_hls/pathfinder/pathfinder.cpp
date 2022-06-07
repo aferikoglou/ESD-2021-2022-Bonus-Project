@@ -2,6 +2,9 @@
 #include "mc.h"
 
 extern "C" {
+
+void initiate_scan(){}
+
 void pathfinder_kernel(char J_buf[COLS*TILE_SIZE], int32_t Jout_buf1[COLS/2], int32_t Jout_buf2[COLS/2]
 			,int32_t Jout_buf3[COLS/2], int32_t Jout_buf4[COLS/2]){
 	#pragma HLS inline off
@@ -9,8 +12,6 @@ void pathfinder_kernel(char J_buf[COLS*TILE_SIZE], int32_t Jout_buf1[COLS/2], in
 	int32_t extra = 2147483647;
 	
 	KERNEL_COMP: for(n = 0; n < COLS/4; n++){
-		#pragma HLS pipeline II=1
-		#pragma HLS unroll factor=64
 
 		int32_t get1, get2, get3, get4;
 		int32_t min1, min2, min3, min4;
@@ -57,10 +58,8 @@ void pathfinder_kernel(char J_buf[COLS*TILE_SIZE], int32_t Jout_buf1[COLS/2], in
 	int32_t extra;
 	int32_t t;
 
-	for(t = 0; t < TILE_SIZE; t+=2){
-		KERNEL_COMP_1: for(n = 0; n < COLS/2; n++){
-			#pragma HLS pipeline II=1
-			#pragma HLS unroll factor=64
+L1:	for(t = 0; t < TILE_SIZE; t+=2){
+L2:		KERNEL_COMP_1: for(n = 0; n < COLS/2; n++){
 
 			int32_t get1, get2;
 			int32_t min1, min2;
@@ -94,9 +93,7 @@ void pathfinder_kernel(char J_buf[COLS*TILE_SIZE], int32_t Jout_buf1[COLS/2], in
 			Jout_buf4[n] = get2+min2;
 		}
 
-		KERNEL_COMP_2: for(n = 0; n < COLS/2; n++){
-			#pragma HLS pipeline II=1
-			#pragma HLS unroll factor=64
+L3:		KERNEL_COMP_2: for(n = 0; n < COLS/2; n++){
 
 			int32_t get1, get2;
 			int32_t min1, min2;
@@ -155,23 +152,16 @@ void workload(class ap_uint<LARGE_BUS> *J, class ap_uint<LARGE_BUS> *Jout){//, i
 	//#pragma HLS INTERFACE s_axilite port=repeat bundle=control
   	#pragma HLS INTERFACE s_axilite port=return bundle=control
 	
-	char J_buf1[COLS*TILE_SIZE];
-	#pragma HLS array_partition variable=J_buf1 cyclic factor=64
-	char J_buf2[COLS*TILE_SIZE];
-	#pragma HLS array_partition variable=J_buf2 cyclic factor=64
+L4:	char J_buf1[COLS*TILE_SIZE];
+L5:	char J_buf2[COLS*TILE_SIZE];
 
-	int32_t Jout_buf1[COLS/2];
-	#pragma HLS array_partition variable=Jout_buf1 cyclic factor=64
-	int32_t Jout_buf2[COLS/2];
-	#pragma HLS array_partition variable=Jout_buf2 cyclic factor=64
+L6:	int32_t Jout_buf1[COLS/2];
+L7:	int32_t Jout_buf2[COLS/2];
 
-	int32_t Jout_buf3[COLS/2];
-	#pragma HLS array_partition variable=Jout_buf3 cyclic factor=64
-	int32_t Jout_buf4[COLS/2];
-	#pragma HLS array_partition variable=Jout_buf4 cyclic factor=64
+L8:	int32_t Jout_buf3[COLS/2];
+L9:	int32_t Jout_buf4[COLS/2];
 
-	int32_t Jtemp[COLS*TILE_SIZE/4];
-	#pragma HLS array_partition variable=Jtemp cyclic factor=64
+L10:	int32_t Jtemp[COLS*TILE_SIZE/4];
 
 	int32_t repeatCount = 0;
 	//for(repeatCount = 0; repeatCount < repeat; repeatCount++){
@@ -183,9 +173,7 @@ void workload(class ap_uint<LARGE_BUS> *J, class ap_uint<LARGE_BUS> *Jout){//, i
 
 	int32_t t;
 
-	KERNEL_TRANSFER: for(t = 0; t < COLS/4; t++){
-		#pragma HLS pipeline II=1
-		#pragma HLS unroll factor=16
+L11:	KERNEL_TRANSFER: for(t = 0; t < COLS/4; t++){
 		Jout_buf3[t * 2 + 1] = (Jtemp[t] >> 24) & 0xFF;
 		Jout_buf1[t * 2 + 1] = (Jtemp[t] >> 16) & 0xFF;
 		Jout_buf3[t * 2] = (Jtemp[t] >> 8) & 0xFF;
@@ -197,7 +185,7 @@ void workload(class ap_uint<LARGE_BUS> *J, class ap_uint<LARGE_BUS> *Jout){//, i
 		COLS*sizeof(char),
 		sizeof(char)*COLS*TILE_SIZE);
 	
-	KERNEL_OUTER: for(t = 1; t < ROWS/TILE_SIZE;t++){
+L12:	KERNEL_OUTER: for(t = 1; t < ROWS/TILE_SIZE;t++){
 		if(t % 2 == 0){
 			load(J_buf2,J,t);
 			pathfinder_kernel(J_buf1,Jout_buf1,Jout_buf2,Jout_buf3,Jout_buf4);
@@ -209,8 +197,7 @@ void workload(class ap_uint<LARGE_BUS> *J, class ap_uint<LARGE_BUS> *Jout){//, i
 
 	pathfinder_kernel(J_buf1,Jout_buf1,Jout_buf2,Jout_buf3,Jout_buf4);
 
-	KERNEL_COPY: for(t = 0; t < COLS/2; t++){
-		#pragma HLS unroll factor=32
+L13:	KERNEL_COPY: for(t = 0; t < COLS/2; t++){
 		Jtemp[t*2] = Jout_buf2[t];
 		Jtemp[t*2+1] = Jout_buf4[t];
 	}

@@ -2,6 +2,9 @@
 #include "mc.h"
 
 extern "C"{
+
+void initiate_scan(){}
+
 float hotspot_stencil_core(float temp_top, float temp_left, float temp_right, float temp_bottom, float temp_center, float power_center, float Cap_1, float Rx_1, float Ry_1, float Rz_1) {
     #pragma HLS inline off
     float tmp = (float)temp_center + (float)temp_center;
@@ -18,24 +21,19 @@ float hotspot_stencil_core(float temp_top, float temp_left, float temp_right, fl
 void hotspot(float result[TILE_ROWS * GRID_COLS], float temp[(TILE_ROWS + 2) * GRID_COLS], float power[TILE_ROWS * GRID_COLS], float Cap_1, float Rx_1, float Ry_1, float Rz_1, int which_boundary) {
     float delta;
     int c, r, i, j, k, ii;
-    float temp_top[PARA_FACTOR], temp_left[PARA_FACTOR], temp_right[PARA_FACTOR], temp_bottom[PARA_FACTOR], temp_center[PARA_FACTOR], power_center[PARA_FACTOR];
+L6:L5:L4:L3:L2:L1:    float temp_top[PARA_FACTOR], temp_left[PARA_FACTOR], temp_right[PARA_FACTOR], temp_bottom[PARA_FACTOR], temp_center[PARA_FACTOR], power_center[PARA_FACTOR];
 
-    float temp_rf [PARA_FACTOR][GRID_COLS * 2 / PARA_FACTOR + 1];
-    #pragma HLS array_partition variable=temp_rf complete dim=0
+L7:    float temp_rf [PARA_FACTOR][GRID_COLS * 2 / PARA_FACTOR + 1];
 
-    for (i = 0 ; i < GRID_COLS * 2 / PARA_FACTOR + 1; i++) {
-        #pragma HLS pipeline II=1
-        for (ii = 0; ii < PARA_FACTOR; ii++) {
-            #pragma HLS unroll
+L8:    for (i = 0 ; i < GRID_COLS * 2 / PARA_FACTOR + 1; i++) {
+L9:        for (ii = 0; ii < PARA_FACTOR; ii++) {
             temp_rf[ii][i] = temp[i*PARA_FACTOR + ii];
         }
     }
     
-    for (i = 0; i < GRID_COLS / PARA_FACTOR * TILE_ROWS ; i++) {
+L10:    for (i = 0; i < GRID_COLS / PARA_FACTOR * TILE_ROWS ; i++) {
     //for (i = -(GRID_COLS * 2 / PARA_FACTOR + 1); i < GRID_COLS / PARA_FACTOR * TILE_ROWS ; i++) {
-        #pragma HLS pipeline II=1
-        for (k = 0; k < PARA_FACTOR; k++) {
-            #pragma HLS unroll
+L11:        for (k = 0; k < PARA_FACTOR; k++) {
             temp_center[k]  = temp_rf[k][GRID_COLS / PARA_FACTOR];
             temp_top[k]     = (i < GRID_COLS / PARA_FACTOR && which_boundary == TOP) ? temp_center[k] : temp_rf[k][0];
             temp_left[k]    = ((i % (GRID_COLS / PARA_FACTOR)) == 0 && k == 0) ? 
@@ -48,10 +46,8 @@ void hotspot(float result[TILE_ROWS * GRID_COLS], float temp[(TILE_ROWS + 2) * G
             result[i * PARA_FACTOR + k] = hotspot_stencil_core(temp_top[k], temp_left[k], temp_right[k], temp_bottom[k], temp_center[k], power_center[k], Cap_1, Rx_1, Ry_1, Rz_1);
         }
 
-        for (k = 0; k < PARA_FACTOR; k++) {
-            #pragma hls unroll
-            for (j = 0; j < GRID_COLS * 2 / PARA_FACTOR; j++) {
-                #pragma hls unroll
+L12:        for (k = 0; k < PARA_FACTOR; k++) {
+L13:            for (j = 0; j < GRID_COLS * 2 / PARA_FACTOR; j++) {
                 temp_rf[k][j] = temp_rf[k][j + 1];
             }
 
@@ -110,26 +106,17 @@ void workload(class ap_uint<LARGE_BUS> *result, class ap_uint<LARGE_BUS> *temp, 
 
     #pragma HLS stable variable=power
 
-    float result_inner_0 [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=result_inner_0 cyclic factor=16
-    float temp_inner_0   [(TILE_ROWS + 2) * GRID_COLS];
-#pragma HLS array_partition variable=temp_inner_0   cyclic factor=16
-    float power_inner_0  [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=power_inner_0  cyclic factor=16
+L14:    float result_inner_0 [TILE_ROWS * GRID_COLS];
+L15:    float temp_inner_0   [(TILE_ROWS + 2) * GRID_COLS];
+L16:    float power_inner_0  [TILE_ROWS * GRID_COLS];
 
-    float result_inner_1 [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=result_inner_1 cyclic factor=16
-    float temp_inner_1   [(TILE_ROWS + 2) * GRID_COLS];
-#pragma HLS array_partition variable=temp_inner_1   cyclic factor=16
-    float power_inner_1  [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=power_inner_1  cyclic factor=16
+L17:    float result_inner_1 [TILE_ROWS * GRID_COLS];
+L18:    float temp_inner_1   [(TILE_ROWS + 2) * GRID_COLS];
+L19:    float power_inner_1  [TILE_ROWS * GRID_COLS];
 
-    float result_inner_2 [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=result_inner_2 cyclic factor=16
-    float temp_inner_2   [(TILE_ROWS + 2) * GRID_COLS];
-#pragma HLS array_partition variable=temp_inner_2   cyclic factor=16
-    float power_inner_2  [TILE_ROWS * GRID_COLS];
-#pragma HLS array_partition variable=power_inner_2  cyclic factor=16
+L20:    float result_inner_2 [TILE_ROWS * GRID_COLS];
+L21:    float temp_inner_2   [(TILE_ROWS + 2) * GRID_COLS];
+L22:    float power_inner_2  [TILE_ROWS * GRID_COLS];
 
     float grid_height = CHIP_HEIGHT / GRID_ROWS;
     float grid_width = CHIP_WIDTH / GRID_COLS;
@@ -150,8 +137,8 @@ void workload(class ap_uint<LARGE_BUS> *result, class ap_uint<LARGE_BUS> *temp, 
     int i , r , c;
     int k;
 
-    for (i = 0; i < SIM_TIME/2; i++) {
-        for (k = 0; k < GRID_ROWS / TILE_ROWS + 2; k++) {
+L23:    for (i = 0; i < SIM_TIME/2; i++) {
+L24:        for (k = 0; k < GRID_ROWS / TILE_ROWS + 2; k++) {
             int load_flag = k >= 0 && k < GRID_ROWS / TILE_ROWS;
             int compute_flag = k >= 1 && k < GRID_ROWS / TILE_ROWS + 1;
             int store_flag = k >= 2 && k < GRID_ROWS / TILE_ROWS + 2;
@@ -177,7 +164,7 @@ void workload(class ap_uint<LARGE_BUS> *result, class ap_uint<LARGE_BUS> *temp, 
             }
         }
 
-        for (k = 0; k < GRID_ROWS / TILE_ROWS + 2; k++) {
+L25:        for (k = 0; k < GRID_ROWS / TILE_ROWS + 2; k++) {
             int load_flag = k >= 0 && k < GRID_ROWS / TILE_ROWS;
             int compute_flag = k >= 1 && k < GRID_ROWS / TILE_ROWS + 1;
             int store_flag = k >= 2 && k < GRID_ROWS / TILE_ROWS + 2;

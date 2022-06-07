@@ -18,20 +18,17 @@ void load(int flag, int i, class ap_uint<LARGE_BUS>* coord, class ap_uint<LARGE_
 void compute(int flag, int num, int k, float* coord, float* weight, float* target, float* cost, int * assign, 
 		int* center_table, char* switch_membership, float* cost_of_opening_x, float* work_mem, float* x_cost){
 	if(flag){
-		pre:for(int i = 0; i < BUF_SIZE; i++){
-			#pragma pipeline II=1
+L1:		pre:for(int i = 0; i < BUF_SIZE; i++){
 			#pragma HLS DEPENDENCE variable=x_cost inter false 
 			float sum = 0;
-			pre_inner:for(int j = 0; j < DIM; j++){
-				#pragma HLS unroll
+L2:			pre_inner:for(int j = 0; j < DIM; j++){
 				float a = coord[i * DIM + j] - target[j];
 				sum += a * a;
 			}
 			x_cost[i] = sum * weight[i];
 		}
 
-		after:for(int i = 0; i < BUF_SIZE; i++){
-			//#pragma HLS pipeline II=6
+L3:		after:for(int i = 0; i < BUF_SIZE; i++){
 			float current_cost = x_cost[i] - cost[i];
 
 			if(current_cost < 0){
@@ -91,40 +88,26 @@ void workload(
     #pragma HLS INTERFACE s_axilite port=numcenter bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-	float buffer_target[DIM];
-	#pragma HLS array_partition variable=buffer_target complete
+L4:	float buffer_target[DIM];
 
-	int buffer_center_table[BATCH_SIZE];
-	#pragma HLS array_partition variable=buffer_center_table cyclic factor=8
-	float buffer_work_mem[BATCH_SIZE];
-	#pragma HLS array_partition variable=buffer_work_mem cyclic factor=8
-	char buffer_switch_membership[BATCH_SIZE];
-	#pragma HLS array_partition variable=buffer_switch_membership cyclic factor=8
-	float buffer_cost_of_opening_x[1];
+L5:	int buffer_center_table[BATCH_SIZE];
+L6:	float buffer_work_mem[BATCH_SIZE];
+L7:	char buffer_switch_membership[BATCH_SIZE];
+L8:	float buffer_cost_of_opening_x[1];
 	buffer_cost_of_opening_x[0] = cost_of_opening_x[0];
 
-	float x_cost[BUF_SIZE];
-	#pragma HLS array_partition variable=x_cost complete
+L9:	float x_cost[BUF_SIZE];
 
-	int buffer_assign_1[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_assign_1 cyclic factor=8
-	float buffer_cost_1[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_cost_1 cyclic factor=8
-	float buffer_weight_1[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_weight_1 cyclic factor=8
-	float buffer_coord_1[BUF_SIZE * DIM];
-	#pragma HLS array_partition variable=buffer_coord_1 cyclic factor=200 //BUF_SIZE
+L10:	int buffer_assign_1[BUF_SIZE];
+L11:	float buffer_cost_1[BUF_SIZE];
+L12:	float buffer_weight_1[BUF_SIZE];
+L13:	float buffer_coord_1[BUF_SIZE * DIM];
 
-	int buffer_assign_2[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_assign_2 cyclic factor=8
-	float buffer_cost_2[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_cost_2 cyclic factor=8
-	float buffer_weight_2[BUF_SIZE];
-	#pragma HLS array_partition variable=buffer_weight_2 cyclic factor=8
-	float buffer_coord_2[BUF_SIZE * DIM];
-	#pragma HLS array_partition variable=buffer_coord_2 cyclic factor=200 //BUF_SIZE
+L14:	int buffer_assign_2[BUF_SIZE];
+L15:	float buffer_cost_2[BUF_SIZE];
+L16:	float buffer_weight_2[BUF_SIZE];
+L17:	float buffer_coord_2[BUF_SIZE * DIM];
 	// float x_cost_2[BUF_SIZE];
-	// #pragma HLS array_partition variable=x_cost_2 complete
 
 	memcpy_wide_bus_read_float(buffer_work_mem, (class ap_uint<LARGE_BUS>*)work_mem, 0, BATCH_SIZE * sizeof(float));
 	memcpy_wide_bus_read_char(buffer_switch_membership, (class ap_uint<LARGE_BUS>*)switch_membership, 0, BATCH_SIZE * sizeof(char));
@@ -137,7 +120,7 @@ void workload(
 	// memcpy(buffer_target, target, DIM * sizeof(float));
 	// memcpy(buffer_center_table, center_table, BATCH_SIZE * sizeof(int));
 
-	process:for(int i = 0; i < BATCH_SIZE + BUF_SIZE; i += BUF_SIZE){
+L18:	process:for(int i = 0; i < BATCH_SIZE + BUF_SIZE; i += BUF_SIZE){
 		int load_flag = i >= 0 && i < BATCH_SIZE;
 		int compute_flag = i >= BUF_SIZE && i <= BATCH_SIZE + BUF_SIZE;
 
