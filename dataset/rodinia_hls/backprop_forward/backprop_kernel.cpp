@@ -15,6 +15,7 @@
 #define ETA 0.3       //eta value
 #define TILE_SIZE 8192
 #define UNROLL_FACTOR 16
+
 extern "C" {
 
 
@@ -30,12 +31,9 @@ void buffer_compute(int flag, int kk, float l1_buf[65537], float conn_buf[TILE_S
 #pragma HLS INLINE off
     int i, j, k;
     if (flag) {
-        LOOP2: for (k = 0; k < TILE_SIZE; k+=UNROLL_FACTOR) {
-        #pragma HLS PIPELINE
-            for(i = 0; i < UNROLL_FACTOR; i++) {
-            #pragma HLS UNROLL
-                LOOP3: for (j = 0; j < 16; j++) {
-                #pragma HLS UNROLL
+L1:        LOOP2: for (k = 0; k < TILE_SIZE; k+=UNROLL_FACTOR) {
+L2:            for(i = 0; i < UNROLL_FACTOR; i++) {
+L3:                LOOP3: for (j = 0; j < 16; j++) {
                     float product = conn_buf[k+i][j] * l1_buf[k+i + kk];
                     sum[i][j] += product;
                 }
@@ -55,40 +53,31 @@ void workload(class ap_uint< 512 > *l1, class ap_uint< 512 > *l2, class ap_uint<
 #pragma HLS INTERFACE s_axilite port=conn bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-            float sum[UNROLL_FACTOR][16];
-#pragma HLS ARRAY_PARTITION variable=sum complete dim=0
+L4:            float sum[UNROLL_FACTOR][16];
 
             int i, j, kk;
 
-            float l1_buf[65536];
-#pragma HLS ARRAY_PARTITION variable=l1_buf cyclic factor=8 dim=1
+L5:            float l1_buf[65536];
 
-            float conn_buf_x[TILE_SIZE][16];
-#pragma HLS ARRAY_PARTITION variable=conn_buf_x cyclic factor=8 dim=1
-#pragma HLS ARRAY_PARTITION variable=conn_buf_x complete dim=2
+L6:            float conn_buf_x[TILE_SIZE][16];
 
-            float conn_buf_y[TILE_SIZE][16];
-#pragma HLS ARRAY_PARTITION variable=conn_buf_y cyclic factor=8 dim=1
-#pragma HLS ARRAY_PARTITION variable=conn_buf_y complete dim=2
+L7:            float conn_buf_y[TILE_SIZE][16];
 
 
-            float l2_buf[16];
-#pragma HLS ARRAY_PARTITION variable=l2_buf complete dim=1
-			for(int loop = 0; loop < 2000; ++loop) {
+L8:            float l2_buf[16];
+L9:			for(int loop = 0; loop < 2000; ++loop) {
             memcpy_wide_bus_read_float(l1_buf, l1, sizeof(float), sizeof(float) * 65536);
 
             memcpy_wide_bus_read_float(sum[0], conn, 0, sizeof(float) * 16);
 
-            for (i = 1; i < UNROLL_FACTOR; i++) {
-#pragma HLS UNROLL
-                for (j = 0; j < 16; j++) {
-#pragma HLS UNROLL
+L10:            for (i = 1; i < UNROLL_FACTOR; i++) {
+L11:                for (j = 0; j < 16; j++) {
                     sum[i][j] = 0.0;
                 }
             }
 
             LOOP1:
-            for (kk = 0; kk < 65536 + TILE_SIZE; kk += TILE_SIZE) {
+L12:            for (kk = 0; kk < 65536 + TILE_SIZE; kk += TILE_SIZE) {
                 int load_flag = (kk < 65536);
                 int compute_flag = (kk >= TILE_SIZE);
                 i = (kk / TILE_SIZE) % 2;
@@ -103,8 +92,7 @@ void workload(class ap_uint< 512 > *l1, class ap_uint< 512 > *l2, class ap_uint<
             }
 
             LOOP4:
-            for (j = 0; j < 16; j++) {
-#pragma HLS UNROLL
+L13:            for (j = 0; j < 16; j++) {
                 l2_buf[j] = (float) (1.0 / (float) (1.0 +
                                                     (float) expf((float) (-(float) sum[0][j] - (float) sum[1][j] -
                                                                           (float) sum[2][j] - (float) sum[3][j] -
