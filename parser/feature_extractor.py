@@ -159,16 +159,20 @@ kernel_name = input("Set HLS kernel name:")
 with open("kernel_info.txt",'w') as outfile:
     outfile.write(f"{kernel_name}\n")
 
-    for array in array_decls:
-        array_str = f"L{array[2]},array,{array[3]}"
-        for i in range(1,array[4]+1):
-            array_str += ',' + str(i) + ',' + str(arrays[array[3]][i-1])
-        array_str += "\n"
-        outfile.write(array_str)
 
-    print(loops)
+    total_rng = len(array_decls) + len(extractor_info)
+    for index in range(total_rng):
+        for array in array_decls:
+            if (index+1 == array[2]):
+                array_str = f"L{array[2]},array,{array[3]}"
+                for i in range(1,array[4]+1):
+                    array_str += ',' + str(i) + ',' + str(arrays[array[3]][i-1])
+                array_str += "\n"
+                outfile.write(array_str)
 
-    for loop in extractor_info:
-        loop_str = f"L{loop[2]},loop," + str(loops[f"{loop[0]}"]) + "\n"
-        outfile.write(loop_str)
+
+        for loop in extractor_info:
+            if (index+1 == loop[2]):
+                loop_str = f"L{loop[2]},loop," + str(loops[f"{loop[0]}"]) + "\n"
+                outfile.write(loop_str)
 
