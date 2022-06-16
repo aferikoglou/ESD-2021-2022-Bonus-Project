@@ -41,7 +41,6 @@ for line in extractor_info:
 expression_elimination = []
 for expr in loop_info:
     expression_elimination.append((expr[0],expr[1],expr[2],re.findall(r'<.*;',expr[3][0])[0][1:]))
-
 ########################### FEATURE EXTRACTION #########################
 
 #print(array_locs)
@@ -172,3 +171,9 @@ with open("kernel_info.txt",'w') as outfile:
         loop_str = f"L{loop[2]},loop," + str(loops[f"{loop[0]}"]) + "\n"
         outfile.write(loop_str)
 
+with open("hls_loop_ranges.txt",'w') as hls_ranges:
+    p = subprocess.Popen(["./loop_an_source",hls_input_file,*libclang_compilation_flags],stdout=hls_ranges)
+p.wait()
+
+p = subprocess.Popen(["python3","loop_analyzer.py","hls_loop_ranges.txt"])
+p.wait()
