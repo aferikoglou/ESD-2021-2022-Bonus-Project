@@ -1,7 +1,10 @@
 #include <iostream>
 #include <clang-c/Index.h>
 #include <vector>
+#include <algorithm>
 using namespace std;
+
+#define HLS_EXCLUSION_FILE "hls_exclusion_list.txt"
 
 #include <cstring>
 int action_point_counter = 1;
@@ -36,9 +39,34 @@ void print_for_loc(CXCursor cc)
     cout << "L," <<line - 1<< "," << col - 1 << ","  << action_point_counter++ <<  endl;
 }
 int analyze = 0;
+vector<int> exclusion_list;
+
+int exclude_line(const vector<int> &v,int cl)
+{
+  return binary_search(v.begin(),v.end(),cl);
+}
 
 int main(int argc,char **argv)
 {
+
+  FILE *f_in = fopen(HLS_EXCLUSION_FILE,"r");
+  int exclusion_points = 0,ep;
+  if (f_in != NULL)
+  {
+    fscanf(f_in,"%i",&exclusion_points);
+    for (int i = 0;i<exclusion_points;i++)
+    {
+      fscanf(f_in,"%i",&ep);
+      exclusion_list.push_back(ep);
+    }
+  }
+  else
+  {
+    cout << "--- Error: failed to open HLS exclusion file, aborting" << endl;
+    return 1;
+  }
+  fclose(f_in);
+
   CXIndex index = clang_createIndex(0, 0);
   CXTranslationUnit unit = clang_parseTranslationUnit(
     index,
@@ -55,14 +83,24 @@ int main(int argc,char **argv)
   clang_visitChildren(
     cursor,
     [](CXCursor c, CXCursor parent, CXClientData client_data)
-    {      
+    {     
+
+
+
       if (clang_Location_isFromMainFile(clang_getCursorLocation(c)))
       {
-        if (clang_getCursorKind(c) == CXCursor_VarDecl)
-          print_decl_loc(c);
-        else if(clang_getCursorKind(c) == CXCursor_ForStmt)
-          print_for_loc(c);
 
+        unsigned line,col;
+        CXSourceLocation src = clang_getCursorLocation(c);
+        clang_getExpansionLocation(src,NULL,&line,&col,NULL); 
+
+        if (exclude_line(exclusion_list,line) == false)
+        {
+          if (clang_getCursorKind(c) == CXCursor_VarDecl)
+            print_decl_loc(c);
+          else if(clang_getCursorKind(c) == CXCursor_ForStmt)
+            print_for_loc(c);
+        }
 
        /* unsigned line,col;
         CXSourceLocation src = clang_getCursorLocation(c);
