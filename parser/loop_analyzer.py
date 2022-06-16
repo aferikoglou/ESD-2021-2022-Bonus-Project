@@ -20,7 +20,8 @@ while i < len(llines):
         fn_name = llines[i].split(":")[1]
         j = i + 1
         while j < len(llines) and "FND:" not in llines[j]:
-            tmp.append(llines[j][:-1])
+            if "FNC:" not in llines[j]:
+                tmp.append(llines[j][:-1])
             j += 1
         i = j
         fn_blocks.append((fn_name[:-1],list(tmp)))
@@ -34,7 +35,7 @@ for fn_block in fn_blocks:
 
     ll = []
     for loop in loop_list:
-        loop_name = loop.split(":") [0]       
+        loop_name = loop.split(":") [0] 
         vars = [int(x) for x in (loop.split(":")[1]).split(",")]
         ll.append((loop_name,*vars))
 
