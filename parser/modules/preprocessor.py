@@ -1,10 +1,10 @@
-def generate_exclusion_list(input_file,exclusion_list_file):
+def generate_exclusion_list(hls_input_file,exclusion_list_file):
     file_lines = []
-    with open(input_file,'r') as input_file:
+    with open(hls_input_file,'r') as input_file:
         file_lines = input_file.readlines()
 
     r_list = []
-    with open(input_file,'w') as clean_code:
+    with open(hls_input_file,'w') as clean_code:
         for i,x in enumerate(file_lines):
             if "@" in x:
                 if "loop_ignore" in x:
