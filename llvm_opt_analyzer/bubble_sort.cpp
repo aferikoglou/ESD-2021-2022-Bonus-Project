@@ -19,7 +19,7 @@ int main(int argc,char **argv)
             if (A[j] > A[j + 1])
             {
                 temp = A[j+1];
-                A[j+1]=A[j];
+                A[j+1]=A[j]+1;
                 A[j]=temp;
             }
     addArr(A,A);
