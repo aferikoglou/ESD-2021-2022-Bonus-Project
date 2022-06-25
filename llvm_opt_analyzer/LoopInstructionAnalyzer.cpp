@@ -8,54 +8,39 @@
 #include <fstream>
 using namespace llvm;
 
-/*
-* WARNING: This File must be placed in the correct LLVM directory
-* and recompiled with the entire project. The Component must also
-* be registered AS A LOOP PASS in the appropriate lists.
-*/
-
-
-// WARNING: to be used as a STANDALONE pass. Disable all optimizations
-// with -O0 at compile time, enable -g debug mode and -Xclang -disable-O0-optnone
-// to allow Transform Passes.
-// ------------- Loop Instruction Counter Prototype -----------------
-
-
+#ifndef InstrAnalysisCount 
+#define InstrAnalysisCount 67
+// Instruction 0 unused
+#endif
 PreservedAnalyses LoopInstructionAnalyzerPass::run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U)
 {
-    unsigned mem_read = 0,mem_write = 0,arithmetic =0,lloc=-1;
-    bool first_instr = true;
-    const ArrayRef< BasicBlock * > BBAR = L.getBlocks();
-    for (size_t i=0;i<BBAR.size();i++)
+    bool firstInstr = true; // variable that is only true for the first instruction in a loop.
+    const ArrayRef< BasicBlock * > BBAR = L.getBlocks(); // Get all basic blocks in a loop
+    unsigned InstructionCountArr[InstrAnalysisCount],lloc=-1;
+
+    // Set array of instruction counters to zero
+    for (int i=0;i<InstrAnalysisCount;i++)
+        InstructionCountArr[i]=0;
+
+    for (size_t i=0;i<BBAR.size();i++) // for every basic block in the loop
     {
-        for (const Instruction &INSTR: *BBAR[i])
+        for (const Instruction &INSTR: *BBAR[i]) // for every instruction in the basic block
         {
-            if (first_instr)
+            if (firstInstr) // execute only for the first instruction in the loop
             {
-                first_instr = false;
-                if (DILocation *Loc = INSTR.getDebugLoc())
-                    lloc = Loc->getLine();
+                firstInstr = false; // if statement will be false from now on
+                
+                // WARNING: For the following line to work, code must be compiled with "-g" (debug) flag
+                if (DILocation *Loc = INSTR.getDebugLoc()) // get line location from debug info
+                    lloc = Loc->getLine(); 
             }
-            switch (INSTR.getOpcode())
-            {
-                case Instruction::Add:// add
-                    arithmetic++;
-                    break;
-                case Instruction::Sub:// add
-                    arithmetic++;
-                    break;
-                case Instruction::Load:
-                    mem_read++;
-                    break;
-                case Instruction::Store:
-                    mem_write++;
-                    break;
-                default:
-                    break;
-            }
+            InstructionCountArr[INSTR.getOpcode()]++; // increment counter for the current instruction opcode
         }
     }
-    outs() << "Loop: " << lloc << " Instructions -> " <<" arr: "<<arithmetic<<", load: "<<mem_read<<", store: "<<mem_write<<"\n";   
+    outs() << "LoopLine:" << lloc << ""; 
+    for (int i=0;i<InstrAnalysisCount;i++)
+        outs()<<","<<InstructionCountArr[i];
+    outs()<<"\n";
     return PreservedAnalyses::all();
 }
