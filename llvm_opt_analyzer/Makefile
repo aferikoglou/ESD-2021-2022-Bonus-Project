@@ -20,10 +20,13 @@
 CXX = /Users/andkakolyr/Desktop/LLVM/llvm-project/build/bin/clang++
 CXXFLAGS = -O0 -Xclang -disable-O0-optnone -g -emit-llvm -S
 OPT = /Users/andkakolyr/Desktop/LLVM/llvm-project/build/bin/opt 
-OPTFLAGS = -passes='loop-instr'
+OPTFLAGS = -passes='instcombine,indvars,mem2reg,function(require<scalar-evolution>),function(require<loops>),loop-instr' -S
+#OPTFLAGS_OLD = -enable-new-pm=0 -scalar-evolution -S
 
 # The following line is disabled as the necessary files are not installed on my current machine.
 #INCLUDE_FLAGS = -I/opt/xilinx/xrt/include -w -I/tools/Xilinx/Vivado/2021.1/include -std=c++11 -fmessage-length=0 -L/opt/xilinx/xrt/lib -I/opt/Xilinx/Vitis_HLS/2020.2/include -lOpenCL -pthread  -lrt -lstdc++
+
+.PRECIOUS: %.ll
 
 %.ll: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $@
