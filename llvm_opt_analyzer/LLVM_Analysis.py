@@ -3,12 +3,14 @@ import json
 import subprocess
 import os
 import re
+from LoopStatistics import LoopStat
 
-def search_for_key_in_loop(line,dict_list,key):
-    for i in dict_list:
-        if i["LoopLine"] == line:
-            return i[key]
-    return None
+def searchForLim(line,file,Llist):
+    for item in Llist:
+        if file in item.getLoopFilename():
+            if item.getLoopLine() == line:
+                return item.getLoopLimit()
+    return 0
 
 HLS_INPUT_FILE = sys.argv[1]
 KERNEL_INFO_PRECURSOR = "hls_extracted_locs.txt"
@@ -17,12 +19,13 @@ EXTRACTOR_OUTPUT_FILE = "extractor_output_file.out"
 AUTOGEN = "autogen_exit"
 
 DIRNAME,PLAIN_NAME = os.path.split(HLS_INPUT_FILE)
+print(PLAIN_NAME)
 if DIRNAME == "": DIRNAME = "."
 
 KERNEL_INFO = f"{DIRNAME}/kernel_info.txt"
 
 TGT_NO_EXT = HLS_INPUT_FILE.split(".")
-STAT_FILE = PLAIN_NAME.split(".")[0] + ".stat"
+STAT_FILE = PLAIN_NAME.split(".")[0] + ".k_stat"
 
 LLVM_TEMP_FILE = "llvm_opt_pass_results.txt"
 LLVM_ISA = "LLVM_InstructionSet.txt"
@@ -33,6 +36,7 @@ if HLS_INPUT_FILE.split(".")[-1] == "cpp":
     LIBCLANG_COMPILATION_FLAGS = ["-I/opt/xilinx/xrt/include","-I/tools/Xilinx/Vivado/2021.1/include","-Wall","-O0","-g","-std=c++14","-fmessage-length=0","-L/opt/xilinx/xrt/lib","-I/opt/Xilinx/Vitis_HLS/2020.2/include","-lOpenCL","-pthread","-lrt","-lstdc++"]
 else:
     LIBCLANG_COMPILATION_FLAGS = ["-I/opt/xilinx/xrt/include","-I/tools/Xilinx/Vivado/2021.1/include","-Wall","-O0","-g","-fmessage-length=0","-L/opt/xilinx/xrt/lib","-I/opt/Xilinx/Vitis_HLS/2020.2/include","-pthread","-lrt"]
+LIBCLANG_COMPILATION_FLAGS = []
 
 print("================ libclang parser =================\n")
 
@@ -124,12 +128,12 @@ for i in arrays:
 
 ## annotate file
 for L in loop_locs:
-    file_lines[L[0]] = f"L{L[2]}:"+file_lines[L[0]]
+    file_lines[L[0]] = f"/*L{L[2]}:*/"+file_lines[L[0]]
 
 for L in array_decls:
-    file_lines[L[0]] = f"L{L[2]}:"+file_lines[L[0]]
+    file_lines[L[0]] = f"/*L{L[2]}:*/" +file_lines[L[0]]
 
-enable_strip = 1
+enable_strip = 0
 
 new_file_lines = []
 if enable_strip > 0:
@@ -143,6 +147,9 @@ if enable_strip > 0:
 
     with open(HLS_INPUT_FILE,'w') as outfile:
         outfile.writelines(new_file_lines)
+else:
+     with open(HLS_INPUT_FILE,'w') as outfile:
+        outfile.writelines(file_lines)
 
 print("============= LLVM opt Loop Analysis =============\n")
 
@@ -153,7 +160,6 @@ with open(LLVM_TEMP_FILE,"w") as llvm_tf:
 
 with open(LLVM_TEMP_FILE,'r') as llvm_tf:
     temp_lines = llvm_tf.readlines()
-
 
 loop_analysis_results = []
 for line in temp_lines:
@@ -166,22 +172,13 @@ with open(LLVM_ISA,"r") as llvm_isa_file:
     instr_list = llvm_isa_file.readlines()
 instr_list = [x[:-1] for x in instr_list]
 
-############## Results per Loop #####################
-
-line_results = []
+############## Results per Loop , generate JSON #####################
+loopsAnalytical = []
 for line in loop_analysis_results:
-    line_dict = dict()
-    temp = line.split("|")
-    for item in temp:
-        comma_split = item.split(",")
-        line_dict[comma_split[0]] = comma_split[1] if len(comma_split) == 2 else comma_split[1:]
-    line_results.append(dict(line_dict))
+    t = LoopStat()
+    t.loadFromString(line)
+    loopsAnalytical.append(t)
 
-for line in line_results:
-    line["LoopLine"] = int(line["LoopLine"]) - 1
-    line["LoopLim"] = int(line["LoopLim"]) - 1 
-    line["VectorizationHint"] = True if line["VectorizationHint"] == '1' else False
-    print(line)
 
 #######################################################################
 kernel_name = sys.argv[2]
@@ -202,8 +199,10 @@ with open(KERNEL_INFO,'w') as outfile:
         for loop in loop_locs:
             if (index+1 == loop[2]):
                 loop_line = loop[0]
-                loop_str = f"L{loop[2]},loop," + str(search_for_key_in_loop(loop_line,line_results,"LoopLim")) + "\n"
+                loop_str = f"L{loop[2]},loop," + str(searchForLim(loop_line,PLAIN_NAME,loopsAnalytical)) + "\n"
+                print(loop_str,end='')
                 outfile.write(loop_str)
 
+print("\nExported to kernel_info.txt\n")
 ### clean temp files
 p = subprocess.Popen(["rm","-rf",*DELETE_LIST])

@@ -1,6 +1,5 @@
 import sys
 import json
-import numpy as np
 
 ###################################################
 # An API for gathering statistics for various loops
@@ -9,48 +8,31 @@ import numpy as np
 class LoopStat:
 
     AllLoopAttributes = []    
-    def __init__(self,InputString: str) -> None:
+    def __init__(self) -> None:
         self.LoopAttributes = {}
 
+    def loadFromString(self,InputString: str):
         attributes = InputString.split("|")
         for attr in attributes:
             attr_list = attr.split(",")
             self.LoopAttributes[attr_list[0]] = attr_list[1:] if len(attr_list) > 1 else []
         
         self.LoopAttributes["Filename"] = self.LoopAttributes["Filename"][0]
-        self.LoopAttributes["LoopLine"] = int(self.LoopAttributes["LoopLine"][0])
-        self.LoopAttributes["LoopLimInferred"] = int(self.LoopAttributes["LoopLim"][1])-1
-        self.LoopAttributes["LoopLim"] = int(self.LoopAttributes["LoopLim"][0])
+        self.LoopAttributes["LoopLine"] = int(self.LoopAttributes["LoopLine"][0])-1
+        self.LoopAttributes["LoopLimActual"] = int(self.LoopAttributes["LoopLimActual"][0]) - 1
+        self.LoopAttributes["LoopLimInferred"] = int(self.LoopAttributes["LoopLimInferred"][0]) -1
+        self.LoopAttributes["LoopLim"] = self.LoopAttributes["LoopLimActual"] if self.LoopAttributes["LoopLimActual"] >= 0 else self.LoopAttributes["LoopLimInferred"]
         self.LoopAttributes["VectorizationHint"] = True if self.LoopAttributes["VectorizationHint"][0] == "1" else False
 
-        subloops = []
-        for i in range(0,len(self.LoopAttributes["Subloops"]),2):
-            subloops.append((self.LoopAttributes["Subloops"][i],int(self.LoopAttributes["Subloops"][i+1])))
-
-        self.LoopAttributes["Instructions"] = [int(x) for x in self.LoopAttributes["Instructions"]]
-        self.LoopAttributes["Outermost"] = True if self.LoopAttributes["NestingLevel"][1] == '1' else False
-        self.LoopAttributes["Innermost"] = True if self.LoopAttributes["NestingLevel"][2] == '1' else False
+        self.LoopAttributes["Outermost"] = True if self.LoopAttributes["Outermost"][0] == '1' else False
+        self.LoopAttributes["Innermost"] = True if self.LoopAttributes["Innermost"][0] == '1' else False
         self.LoopAttributes["NestingLevel"] = int(self.LoopAttributes["NestingLevel"][0])
-        self.LoopAttributes["Subloops"] = list(subloops)
         LoopStat.AllLoopAttributes.append(self.LoopAttributes)
 
-    def searchForSubloop(filename,loopline):
-        for item in LoopStat.AllLoopAttributes:
-            if item["Filename"] == filename and item["LoopLine"] == loopline:
-                return item
-        return None
-
-    def getTotalOpsGlobal(filename,loopline):
-        CL = LoopStat.searchForSubloop(filename,loopline)
-        if CL["LoopLim"] > 0:
-            operations = CL["LoopLim"] * np.array(CL["Instructions"],dtype=int)
-        elif CL["LoopLimInferred"] > 0:
-            operations = CL["LoopLimInferred"] * np.array(CL["Instructions"],dtype=int)
-        else:
-            return np.zeros(len(CL["Instructions"]),dtype=int)
-        for subl in CL["Subloops"]:
-            operations += np.array(LoopStat.getTotalOpsGlobal(*subl))
-        return operations
+    
+    def loadFromDict(self,loadDict):
+        for key in loadDict:
+            self.LoopAttributes[key] = loadDict[key]
 
     def getLoopLine(self): return self.LoopAttributes["LoopLine"]
     def getLoopFilename(self): return self.LoopAttributes["Filename"]
@@ -58,17 +40,26 @@ class LoopStat:
     def getNestingLevel(self): return self.LoopAttributes["NestingLevel"]
     def isInnermost(self): return self.LoopAttributes["Innermost"]
     def isOutermost(self): return self.LoopAttributes["Outermost"]
-    def getLoopLimit(self): return self.LoopAttributes["LoopLim"]
+    def getLoopLimit(self): return self.LoopAttributes["LoopLimActual"]
     def getLoopLimitBestEffort(self):
         ll = self.getLoopLimit()
         if ll > 0:
             return ll
         return self.LoopAttributes["LoopLimInferred"]
-    def getInstructionsRecursive(self): return LoopStat.getTotalOpsGlobal(self.getLoopFilename(),self.getLoopLine()).tolist()
-    def getInstructionsSuperficial(self): return self.LoopAttributes["Instructions"]
-    def getVectorizationHint(self): return self.LoopAttributes["VectorizationHint"]
 
-        
+
+    def exportLoopData(self):
+        exportLog = dict()
+        exportLog["LoopLine"] = self.getLoopLine()
+        exportLog["Filename"] = self.getLoopFilename()
+        exportLog["Subloops"] = self.getSubloops()
+        exportLog["NestingLevel"] = self.getNestingLevel()
+        exportLog["Innermost"] = self.isInnermost()
+        exportLog["Outermost"] = self.isOutermost()
+        exportLog["LoopLimActual"] = self.getLoopLimit()
+        exportLog["LoopLimInferred"] = self.getLoopLimitBestEffort()
+        exportLog["VectorizationHint"] = self.getVectorizationHint()
+    
         
 '''  
 X = LoopStat("Filename,bubble_sort.cpp|LoopLine,18|LoopLim,0,16|Instructions,0,0,5,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,2,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,1,12,0,0,0,0,0,0,0,0,0,0|VectorizationHint,0|NestingLevel,2,0,1|Subloops")
