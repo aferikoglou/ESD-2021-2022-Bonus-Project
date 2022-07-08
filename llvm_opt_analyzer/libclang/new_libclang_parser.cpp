@@ -9,14 +9,15 @@
 using namespace std;
 
 #define KERNEL_INFO_PRECURSOR "hls_extracted_locs.txt"
-
+#define FNDecls "hls_function_declarations.txt"
 // global action point counter for analyzed action points
 int ap_counter = 1;
-ofstream kernel_info_precursor;
+ofstream kernel_info_precursor,fn_decls;
 
 int main(int argc, char **argv)
 {
   kernel_info_precursor.open(KERNEL_INFO_PRECURSOR);
+  fn_decls.open(FNDecls);
 
   // ---------------- Open source file for libclang parsing ---------
   // arguments are <source_file> + any number of -I flags for headers
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
           */
           switch (clang_getCursorKind(c))
           {
-            case CXCursor_FunctionDecl: FunctionDeclAction(c,line,col,kernel_info_precursor);
+            case CXCursor_FunctionDecl: FunctionDeclAction(c,line,col,kernel_info_precursor,fn_decls);
               break;
 
             case CXCursor_CallExpr: CallExprAction(c,line,col,kernel_info_precursor);

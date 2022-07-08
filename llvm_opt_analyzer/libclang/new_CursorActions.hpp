@@ -41,11 +41,16 @@ void VarDeclAction(CXCursor c,unsigned line, unsigned col, ofstream &kernel_prec
 }
 
 // variable kernel_precursor unused, only included to maintain conformity with other similar functions
-void FunctionDeclAction(CXCursor c,unsigned line, unsigned col, ofstream &kernel_precursor)
+void FunctionDeclAction(CXCursor c,unsigned line, unsigned col, ofstream &kernel_precursor, ofstream &fn_decls)
 {
     assert(clang_getCursorKind(c) == CXCursor_FunctionDecl);
+    CXSourceRange range = clang_getCursorExtent(c);
+    CXSourceLocation start = clang_getRangeStart(range), end = clang_getRangeEnd(range);
+    unsigned lstart,lend;
+    clang_getExpansionLocation(start,NULL,&lstart,NULL,NULL);
+    clang_getExpansionLocation(end,NULL,&lend,NULL,NULL);
     // FND: FuNction Declaration
-    //loop_ranges << "FND:" << clang_getCursorSpelling(c) << endl; 
+    fn_decls << clang_getCursorSpelling(c) << "," << lstart << "," << lend << endl; 
 }
 
 void CallExprAction(CXCursor c,unsigned line, unsigned col, ofstream &kernel_precursor)
