@@ -58,7 +58,7 @@ class SourceStatistics:
         elif inferredLim > 0:
             lLim = inferredLim
 
-        totalOps = lLim * np.array(self.loops[loop]["LocalOps"])
+        totalOps = lLim * np.array(self.loops[loop]["LocalOps"],dtype=int)
         for subl in self.loops[loop]["Subloops"]:
             totalOps += lLim * np.array(self._generateTotalOps_aux(subl),dtype=int)
         self.loops[loop]["TotalOps"] = totalOps.tolist()
@@ -89,9 +89,13 @@ class SourceStatistics:
                     elif not self.loops[loop]["InlinedInstance"]:
                         subls.append(loop)
             self.functions[f]["ActiveLoops"] = list(subls)
-            self.functions[f]["FunctionOps"] = np.zeros(67)
+            self.functions[f]["FunctionOps"] = np.zeros(67,dtype=int)
             for subl in subls:
-                self.functions[f]["FunctionOps"] += np.array(self.loops[subl]["TotalOps"],dtype=int)
+                try:
+                    fetched_arr = self.loops[subl]["TotalOps"]
+                    self.functions[f]["FunctionOps"] += np.array(fetched_arr,dtype=int)
+                except:
+                    print("[Warning]: Unable to find loop (possibly inlined and non-standard), skipping this entry ...")
             self.functions[f]["FunctionOps"] = self.functions[f]["FunctionOps"].tolist()
 
 
@@ -107,7 +111,7 @@ class SourceStatistics:
 
     def generateSourceInfo(self,outfile:str):
         outDict = {}
-        totalCodeOps = np.zeros(67)
+        totalCodeOps = np.zeros(67,dtype=int)
         for function in self.functions:
             totalCodeOps += np.array(self.functions[function]["FunctionOps"],dtype=int)
         totalCodeOps = totalCodeOps.tolist()
@@ -116,8 +120,11 @@ class SourceStatistics:
 
         NonInlinedLoops = {}
         for loop in self.loops:
-            if not self.loops[loop]["InlinedInstance"]:
-                NonInlinedLoops[self.LinesToTags[str(self.loops[loop]["LoopLine"])]] = dict(self.loops[loop])
+            if not self.loops[loop]["InlinedInstance"] and self.src in self.loops[loop]["Filename"]:
+                try:
+                    NonInlinedLoops[self.LinesToTags[str(self.loops[loop]["LoopLine"])]] = dict(self.loops[loop])
+                except:
+                    print("[Warning]: Unable to find non-inlined loop (possibly non-standard)")
 
         outDict = {"TotalCodeOps": totalCodeOps, "TLFOps": TLFOps,"functions":self.functions, "loops": NonInlinedLoops}
         with open(outfile,"w") as src_info:
@@ -162,7 +169,7 @@ SourceAnalysis.setCodeFunctions(fn_tuples)
 SourceAnalysis.setTLF(TLF)
 SourceAnalysis.estimateFunctionOps()
 SourceAnalysis.linkLinesToTags(KERNEL_INFO_PRECURSOR)
-SourceAnalysis.generateSourceInfo("src_info.json")
+SourceAnalysis.generateSourceInfo(f"{DIRNAME}/src_info.json")
 
 
 '''

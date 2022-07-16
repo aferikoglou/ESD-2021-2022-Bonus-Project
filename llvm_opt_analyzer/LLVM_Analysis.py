@@ -36,7 +36,7 @@ if HLS_INPUT_FILE.split(".")[-1] == "cpp":
     LIBCLANG_COMPILATION_FLAGS = ["-I/opt/xilinx/xrt/include","-I/tools/Xilinx/Vivado/2021.1/include","-Wall","-O0","-g","-std=c++14","-fmessage-length=0","-L/opt/xilinx/xrt/lib","-I/opt/Xilinx/Vitis_HLS/2020.2/include","-lOpenCL","-pthread","-lrt","-lstdc++"]
 else:
     LIBCLANG_COMPILATION_FLAGS = ["-I/opt/xilinx/xrt/include","-I/tools/Xilinx/Vivado/2021.1/include","-Wall","-O0","-g","-fmessage-length=0","-L/opt/xilinx/xrt/lib","-I/opt/Xilinx/Vitis_HLS/2020.2/include","-pthread","-lrt"]
-LIBCLANG_COMPILATION_FLAGS = []
+
 
 print("================ libclang parser =================\n")
 
