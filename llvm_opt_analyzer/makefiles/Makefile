@@ -32,6 +32,12 @@ OPTFLAGS_SSTAT = -passes='$(OPTFLAGS_COMMON),inlined-explorer' -S
 %.lls: %.c
 	$(CC) -O1 $(CXXFLAGS) $(INCLUDE_FLAGS_C) $(XILINX_FLAGS) $< -o $@
 
+%.llp: %.cpp
+	$(CXX) -O1 -disable-llvm-passes $(CXXFLAGS) $(INCLUDE_FLAGS_CPP) $(XILINX_FLAGS) $< -o $@
+
+%.llp: %.c
+	$(CC) -O1 -disable-llvm-passes $(CXXFLAGS) $(INCLUDE_FLAGS_C) $(XILINX_FLAGS) $< -o $@
+
 #%.lls: %.cl	
 #	$(CXX) -O1 $(CXXFLAGS) $(INLUDE_FLAGS_OPENCL) $(XILINX_FLAGS) $< -o $@
 
@@ -41,3 +47,6 @@ OPTFLAGS_SSTAT = -passes='$(OPTFLAGS_COMMON),inlined-explorer' -S
 %.s_stat: %.lls
 	$(OPT) --inline --always-inline $< -o $<;
 	$(OPT) $(OPTFLAGS_SSTAT) $< -o $<;
+
+%.p_stat: %.llp
+	$(OPT) -S -polly --polly-canonicalize --polly-prepare --polly-check-parallel --print-polyhedral-info $< -o $<;
