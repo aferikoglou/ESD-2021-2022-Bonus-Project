@@ -1,18 +1,18 @@
-#ifndef LLVM_TRANSFORMS_LOOPINSTRUCTIONANALYZER_H
-#define LLVM_TRANSFORMS_LOOPINSTRUCTIONANALYZER_H
+#ifndef LLVM_TRANSFORMS_INLINEDEXPLORER_H
+#define LLVM_TRANSFORMS_INLINEDEXPLORER_H
 
 #include "llvm/IR/PassManager.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/ScalarEvolution.h"
 
 namespace llvm {
-  
 
 class Loop;
 class LPMUpdater;
 
-class LoopInstructionAnalyzerPass : public PassInfoMixin<LoopInstructionAnalyzerPass> {
+class InlinedExplorerPass : public PassInfoMixin<InlinedExplorerPass> {
 public:
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U);
@@ -20,4 +20,4 @@ public:
 
 } // namespace llvm
 
-#endif // LLVM_TRANSFORMS_LOOPINSTRUCTIONANALYZERD_H
+#endif // LLVM_TRANSFORMS_INLINEDEXPLORER_H

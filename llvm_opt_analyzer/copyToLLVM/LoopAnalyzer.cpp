@@ -1,4 +1,4 @@
-#include "llvm/Transforms/Utils/LoopInstructionAnalyzer.h"
+#include "llvm/Transforms/Utils/LoopAnalyzer.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -17,7 +17,7 @@ using namespace llvm;
 #define FILENAME_LIM 512
 #endif 
 
-PreservedAnalyses LoopInstructionAnalyzerPass::run(Loop &L, LoopAnalysisManager &AM,
+PreservedAnalyses LoopAnalyzerPass::run(Loop &L, LoopAnalysisManager &AM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U)
 {   
     char loopFilename[FILENAME_LIM];
